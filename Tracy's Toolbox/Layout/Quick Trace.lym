@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="utf-8"?>
+<klayout-macro>
+ <description>Quick Trace</description>
+ <version/>
+ <category/>
+ <prolog/>
+ <epilog/>
+ <doc/>
+ <autorun>false</autorun>
+ <autorun-early>false</autorun-early>
+ <shortcut/>
+ <show-in-menu>true</show-in-menu>
+ <group-name/>
+ <menu-path>trt_menu.layout_submenu.end</menu-path>
+ <interpreter>ruby</interpreter>
+ <dsl-interpreter-name/>
+ <text>## Quick DRC.lym
+## By davidnhutch
+## 
+## This script shows a dialog box where you can type a quick DRC 
+## script and run it. Why? Often I find I want to run a quick 
+## script to generate some output, but it is extra work to open 
+## the macro editor, create it, save it (especially if I don't 
+## really need to save it for future reference), then run it. 
+## Secondly, scripts run on large layouts with the Macro Editor 
+## open run slowly, therefore the Editor must be closed. But then 
+## to make a minor change you have to open the Editor again, make 
+## the change, save it, close the Editor, and find and run the 
+## script under the Tools menu. Anyway, "Quick DRC.lym" eliminates 
+## some of those steps. 
+## 
+## As a final note, I find I use DRC for a lot of things (not only 
+## Design Rule Checking), so for instance you might use this to do 
+## a quick boolean operation on multiple layers and spit out the 
+## output. For example try drawing some shapes on layers 1,2,3 and 
+## typing: 
+## inp = (input(1)|input(2)) &amp; input(3); inp.sized(3.um).output(4)
+
+# TODO: Make this remember the last script that was run and pre-populate the text area
+
+module QuickTrace
+
+include RBA
+app = RBA::Application.instance
+tracer = RBA::NetTracer::new
+tech = RBA::NetTracerTechnology::new
+layout = RBA::Layout::new
+ly = RBA::CellView.active.layout
+cv = RBA::CellView.active.cell
+dbu = ly.dbu
+
+dialog = QDialog.new(Application.instance.main_window);
+dialog.resize(400,200)
+dialog.windowTitle = "Opens/Shorts/PowerPlot/Trace Net";
+qt_layout = QVBoxLayout::new(dialog);
+dialog.setLayout(qt_layout)
+
+
+cell = layout.create_cell("check_result")
+ # Drawing layers
+nwell      = String.new("1/0")
+diff         = String.new("2/0")
+pplus      = String.new("3/0")
+nplus      = String.new("4/0")
+poly        = String.new("5/0")
+thickox    = String.new("6/0")
+polyres    = String.new("7/0")
+contact    = String.new("8/0")
+metal1     = String.new("9/0")
+via           = String.new("10/0")
+metal2    =  String.new("11/0")
+
+
+#diff_in_nwell = diff &amp;= nwell
+#tech.connection("1/0", "2/0")
+#tech.connection("2/0", "3/0")
+#tech.connection("3/0" ,"4/0")
+#tech.connection("4/0" ,"5/0")
+#tech.connection("5/0", "6/0")
+#tech.connection("6/0" ,"7/0")
+#tech.connection("7/0", "8/0")
+#tech.connection("8/0" ,"9/0")
+#ch.connection("9/0", "10/0")
+#tech.connection("10/0" , "11/0")
+
+#tech.connection(nwell,  contact, diff)
+#tech.connection(nwell,  contact, pplus)
+tech.connection(poly, contact, metal1)
+tech.connection(metal1, contact ,nwell)
+tech.connection(metal1, contact ,nplus)
+tech.connection(metal1,via, metal2)
+
+layers = ly.layer_indexes.collect { |li| info = ly.get_info(li); [ info.layer, info.datatype, li ] }.sort
+
+# fetch display names
+names = {}
+RBA::LayoutView.current.each_layer do |lref|
+  if lref.name != "" &amp;&amp; lref.cellview == RBA::CellView.active.index
+          names[lref.layer_index] = lref.name
+     end
+end
+
+in_lyp = []
+nets = []
+
+layers.each do |layer,datatype,li|
+  if ! cv.bbox_per_layer(li).empty?
+        if names[li]
+              in_lyp &lt;&lt;  names[li]
+              layer_info = LayerInfo.new(layer,0)
+              layer_index = ly.layer(layer_info)
+              cv.each_shape(layer_index) do |shape|
+        if shape.is_text?
+               text_obj = shape.text
+               string = text_obj.string
+               nets &lt;&lt; string
+               end
+            end
+         end
+     end
+end
+  
+unique_nets = nets.uniq
+
+# Define the Net combo box
+combo_net = QComboBox.new(dialog)
+unique_nets.each { |p|
+  combo_net.addItem(p) # libs[0] will be selected initially
+}
+
+# Define the Layers combo box
+combo_layers = QComboBox.new(dialog)
+in_lyp.each { |p|
+  combo_layers.addItem(p) # libs[0] will be selected initially
+}
+
+# Add the combo box to choose net
+qt_layout.addWidget(combo_net)
+# Add the combo box to choose layers    
+qt_layout.addWidget(combo_layers)
+
+# OK button
+buttonOK = QPushButton.new(dialog)
+qt_layout.addWidget(buttonOK)
+buttonOK.text = " OK "
+buttonOK.clicked do 
+       dialog.accept()
+end
+
+#Get Result of Combo box
+result = dialog.exec
+result == 1 ? accepted = true : accepted = false
+
+#process Selection
+gotcha =  combo_layers.currentText.partition('-').first
+metal  =  combo_layers.currentText.partition('-').last
+getNet = combo_net.currentText
+
+puts "Net Selected #{combo_net.currentText}"
+puts "Selected Layer #{gotcha}"
+puts "Processing #{metal}"
+layer_info = LayerInfo.new(gotcha.to_i,0)
+layer_index = ly.layer(layer_info)
+
+cv.each_shape(layer_index) do |shape|
+    if shape.is_text?
+             text_obj = shape.text
+             string = text_obj.string
+             x =  text_obj.x
+             y =  text_obj.y
+         if   string == getNet
+                       puts "Processing '#{string}' Active Tracing net : (#{'%.3f' % x},#{'%.3f' % y})"
+                       tracer.trace(tech, ly, ly.top_cell, RBA::Point::new(x, y), ly.find_layer(layer_info))
+                       tracer.each_element do |e| 
+                             layer_spec = ly.get_info(e.layer)
+                             layer_id_in_target_layout = layout.layer(layer_spec)
+                             cell.shapes(layer_id_in_target_layout).insert(e.shape,e.trans)  
+              end  
+         end
+    end
+end
+
+layout.write("E:/Klayout/si4all/samples/check_result.gds")
+puts "Tracing finished"
+
+  
+end</text>
+</klayout-macro>

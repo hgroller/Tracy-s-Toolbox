@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<klayout-macro>
+ <description/>
+ <version/>
+ <category/>
+ <prolog/>
+ <epilog/>
+ <doc/>
+ <autorun>true</autorun>
+ <autorun-early>false</autorun-early>
+ <shortcut/>
+ <show-in-menu>false</show-in-menu>
+ <group-name/>
+ <menu-path>trt_menu.core_submenu.end</menu-path>
+ <interpreter>ruby</interpreter>
+ <dsl-interpreter-name/>
+ <text>## One script to rule them all.lym
+## By davidnhutch
+## 
+## The other The Red Toolbox scripts can be copied and used standalone.
+## If you want to get the whole set of TRT scripts, then you'll need this script also, which comes along when you download the .zip file.
+## This script installs menu items etc, to make all of these standalone scripts act like a unified toolbox.
+
+include RBA
+app = RBA::Application.instance
+mw = app.main_window
+menu = mw.menu
+
+trt_root = File.dirname(File.dirname(__FILE__))
+
+# MENUS
+
+t = "trt_menu"
+if !menu.is_menu?(t) # If it doesn't exist already
+  menu.insert_menu("help_menu",t,"Tracy's ToolBox") # Insert before Help menu
+end
+
+# Each script is standalone and can be extracted from TRT and 
+# used by itself, and it won't show up in a menu. But when this 
+# script is present, it defines the below sub-menus and 
+# therefore the scripts all assemble themselves in to their 
+# respective sub-menus.
+
+# NOTE: Due to a bug in KLayout (which Matthias already fixed 
+# and will be in a future KLayout release), the icon assignment 
+# doesn't work correctly here unless you run this after a 
+# LayoutView has been created.
+
+#s = "selection_submenu"
+#r = "Selection"
+#icon = File.expand_path(trt_root + "/Icons/" + s + ".png")
+#menu.insert_menu(t+".end",s,r) if !menu.is_menu?(t + "." + s) # If it doesn't exist already
+#menu.action(t + "." + s).icon = icon
+
+#s = "cells_submenu"
+#r = "Cells"
+#icon = File.expand_path(trt_root + "/Icons/" + s + ".png")
+#menu.insert_menu(t+".end",s,r) if !menu.is_menu?(t + "." + s)
+#menu.action(t + "." + s).icon = icon
+
+s = "layout_submenu"
+r = "Layout"
+icon = File.expand_path(trt_root + "/Icons/" + s + ".png")
+menu.insert_menu(t+".end",s,r) if !menu.is_menu?(t + "." + s)
+menu.action(t + "." + s).icon = icon
+
+#s = "file_actions_submenu"
+#r = "File actions"
+#icon = File.expand_path(trt_root + "/Icons/" + s + ".png")
+#menu.insert_menu(t+".end",s,r) if !menu.is_menu?(t + "." + s)
+#menu.action(t + "." + s).icon = icon
+
+s = "core_submenu"
+r = "Core"
+icon = File.expand_path(trt_root + "/Icons/" + s + ".png")
+menu.insert_menu(t+".end",s,r) if !menu.is_menu?(t + "." + s)
+menu.action(t + "." + s).icon = icon
+
+#s = "grids_submenu"
+#r = "Grids"
+#icon = File.expand_path(trt_root + "/Icons/" + s + ".png")
+#menu.insert_menu(t+".end",s,r) if !menu.is_menu?(t + "." + s)
+#menu.action(t + "." + s).icon = icon</text>
+</klayout-macro>
