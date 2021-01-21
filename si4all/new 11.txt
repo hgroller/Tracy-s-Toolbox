@@ -1,0 +1,23 @@
+
+
+
+ # Drawing layers
+nwell      = String.new("1/0")
+diff       = String.new("2/0")
+pplus      = String.new("3/0")
+nplus      = String.new("4/0")
+poly       = String.new("5/0")
+thickox    = String.new("6/0")
+polyres    = String.new("7/0")
+contact    = String.new("8/0")
+metal1     = String.new("9/0")
+via        = String.new("10/0")
+metal2     = String.new("11/0")
+
+
+tech.connection(nwell,  contact, diff)
+tech.connection(nwell,  contact, pplus)
+tech.connection(poly,   contact, metal1)
+tech.connection(metal1, contact ,nwell)
+tech.connection(metal1, contact ,nplus)
+tech.connection(metal1,  via, metal2)
