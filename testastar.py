@@ -162,9 +162,10 @@ start, goal = (xstart,ystart), (xend,yend)
 ############# Walls Below for Blockage change X,Y Values
 # You can change  the  charistics of the wall with plus/minus as below
 #diagram4.walls += [(x ,y), (x,y), (x,y), (x, y), (x, y), (y , x ), (x,x)]
+#playing around with the diagram walls in the x,y gives other results for the wall
 for x in range(12, 20):
-   for y in range(5,25):
-       diagram4.walls += [(x  + 12,y -22), (x,y + 22), (x,y), (x, y), (x, y), (y + 5, x - 22), (x,x)]
+   for y in range(15,25):
+       diagram4.walls += [(x  ,y ), (x,x), (x,y), (x, x), (x, y), (y , x ), (x,y)]
 
 #############################  End Testing ##################################################
 
