@@ -23,7 +23,7 @@
 
 require 'rexml/document'
 
-version = "0.3.4"
+version = "0.1.0"
 
 # Write document
 #TODO: In the next line, also make it output xml declaration &lt;?xml version="1.0" encoding="utf-8"?&gt; or preserve it if it existed in 'doc'.

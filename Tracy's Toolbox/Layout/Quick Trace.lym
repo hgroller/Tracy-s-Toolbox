@@ -15,28 +15,6 @@
  <interpreter>ruby</interpreter>
  <dsl-interpreter-name/>
  <text>## Quick DRC.lym
-## By davidnhutch
-## 
-## This script shows a dialog box where you can type a quick DRC 
-## script and run it. Why? Often I find I want to run a quick 
-## script to generate some output, but it is extra work to open 
-## the macro editor, create it, save it (especially if I don't 
-## really need to save it for future reference), then run it. 
-## Secondly, scripts run on large layouts with the Macro Editor 
-## open run slowly, therefore the Editor must be closed. But then 
-## to make a minor change you have to open the Editor again, make 
-## the change, save it, close the Editor, and find and run the 
-## script under the Tools menu. Anyway, "Quick DRC.lym" eliminates 
-## some of those steps. 
-## 
-## As a final note, I find I use DRC for a lot of things (not only 
-## Design Rule Checking), so for instance you might use this to do 
-## a quick boolean operation on multiple layers and spit out the 
-## output. For example try drawing some shapes on layers 1,2,3 and 
-## typing: 
-## inp = (input(1)|input(2)) &amp; input(3); inp.sized(3.um).output(4)
-
-# TODO: Make this remember the last script that was run and pre-populate the text area
 
 module QuickTrace
 
@@ -85,9 +63,9 @@ metal2    =  String.new("11/0")
 
 #tech.connection(nwell,  contact, diff)
 #tech.connection(nwell,  contact, pplus)
-tech.connection(poly, contact, metal1)
-tech.connection(metal1, contact ,nwell)
-tech.connection(metal1, contact ,nplus)
+#tech.connection(poly, contact, metal1)
+#tech.connection(metal1, contact ,nwell)
+#tech.connection(metal1, contact ,nplus)
 tech.connection(metal1,via, metal2)
 
 layers = ly.layer_indexes.collect { |li| info = ly.get_info(li); [ info.layer, info.datatype, li ] }.sort
