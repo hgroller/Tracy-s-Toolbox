@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<klayout-macro>
+ <description/>
+ <version/>
+ <category/>
+ <prolog/>
+ <epilog/>
+ <doc/>
+ <autorun>false</autorun>
+ <autorun-early>true</autorun-early>
+ <shortcut/>
+ <show-in-menu>false</show-in-menu>
+ <group-name/>
+ <menu-path/>
+ <interpreter>ruby</interpreter>
+ <dsl-interpreter-name/>
+ <text>## Extend core functionality.lym
+## By davidnhutch
+## 
+## This script runs early on startup and variously extends certain core scripting functionalities.
+
+$TRT_CONFIG_FILE = File.expand_path('config.xml',File.dirname(__FILE__))
+
+module Kernel
+
+  # Make it possible to load .lym, .lydrc, and .rbm files, similar to loading .rb files
+  # Examples: 
+  #   load('file.rb')
+  #   load('file.rbm')
+  #   load('file.lym')
+  #   load('file.lydrc')
+  
+  def load(file)
+    case File.extname(file) 
+    when '.lym'
+      require 'rexml/document'  
+      doc = REXML::Document.new(File.new(file))
+      str = REXML::XPath.first(doc,"//text").text
+      eval(str)
+    when '.lydrc'
+      require 'rexml/document'  
+      doc = REXML::Document.new(File.new(file))
+      str = REXML::XPath.first(doc,"//text").text
+      engine = DRC::DRCEngine::new
+      engine.instance_eval(str, '')
+    when '.rbm'
+      file = file[0..-2] # Remove the last character, which is 'm', so you have an .rb file
+      super(file)
+    else
+      super(file)
+    end
+  end
+  
+  # Make it possible to run drc commands from the console.
+  # Example: drc('input(1).sized(3.um).output(2)')
+  def drc(drc_string)
+    engine = DRC::DRCEngine::new
+    engine.instance_eval(drc_string, '') # The first argument is the content of the file, the second is the file path. The path is used to show the file name in error messages only.
+  end
+  
+end
+
+module RBA
+
+  # A couple of convenience methods:
+  class DPolygon
+    def to_polygon
+      dpts = []
+      self.each_point_hull { |dpt| dpts &lt;&lt; dpt }
+      new_pts = dpts.map { |dpt| Point.new(dpt.x,dpt.y) }
+      new_poly = Polygon.new(new_pts)
+    end
+  end
+  class DPath
+    def to_path
+      width = self.width
+      dpts = []
+      self.each_point { |dpt| dpts &lt;&lt; dpt }
+      new_pts = dpts.map { |dpt| Point.new(dpt.x,dpt.y) }
+      new_path = Path.new(new_pts,width)
+    end
+  end
+
+  class Application
+    
+    # Get and set TRT config parameters.
+    # I know you can write to the .klayoutrc file using Application#set_config and Application#get_config, but actually I didn't want to insert a bunch of custom stuff into that file. Cleaner for TRT to have its own config file.
+    
+    # Returns strings in all cases, even when the config parameter is a number.
+    def get_trt_config(param)
+      require 'rexml/document'
+      doc = REXML::Document.new(File.new($TRT_CONFIG_FILE))
+      s = REXML::XPath.first(doc,"//config/#{param}")
+      if s.nil? # If nil then the param is non-existent in the config file
+        str = nil
+      else
+        str = REXML::XPath.first(doc,"//config/#{param}").text
+      end
+    end
+    
+    # Use strings in all cases for both param and val, even when the config parameter is a number.
+    # If tag &lt;param&gt; exists, its contents will be over-written.
+    # If tag &lt;param&gt; doesn't exist, it will be created.
+    def set_trt_config(param,string)
+      
+      # Read existing document
+      require 'rexml/document'
+      file = File.open($TRT_CONFIG_FILE, "r+")
+      doc = REXML::Document.new(file)
+      
+      # Create element if it doesn't already exist, then give it a text value
+      if doc.root.elements[param].nil?
+        doc.root.elements[param] = REXML::Element.new(param)
+      end
+      doc.root.elements[param].text = string 
+      
+      # Write document
+      formatter = REXML::Formatters::Pretty.new
+      formatter.compact = true
+      #TODO: In the next line, also make it output xml declaration &lt;?xml version="1.0" encoding="utf-8"?&gt; or preserve it if it existed in 'doc'.
+      File.open($TRT_CONFIG_FILE,"w"){ |data| data &lt;&lt; formatter.write(doc.root,"") }
+      
+    end
+    
+    
+  end
+end</text>
+</klayout-macro>

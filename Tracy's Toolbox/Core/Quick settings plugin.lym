@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<klayout-macro>
+ <description/>
+ <version/>
+ <category/>
+ <prolog/>
+ <epilog/>
+ <doc/>
+ <autorun>true</autorun>
+ <autorun-early>false</autorun-early>
+ <shortcut/>
+ <show-in-menu>false</show-in-menu>
+ <group-name/>
+ <menu-path/>
+ <interpreter>ruby</interpreter>
+ <dsl-interpreter-name/>
+ <text>## Quick settings plugin.lym
+## By davidnhutch
+## 
+## Installs a new panel on the right. Displays and lets you change 
+## settings for various parameters. All of these are accessible 
+## elsewhere (most in File &gt; Setup or Edit &gt; Options), but this 
+## panel gives you visual feedback at a glance.
+
+# TODO: Add an entry in View menu, where you can show this panel again if you happen to close it. Also the panel must set the checked state of that menu item to unchecked whenever it is closed
+# TODO: Make which settings are shown to be user-configurable
+
+include RBA
+
+class QVPPluginFactory &lt; PluginFactory
+
+  def initialize(qlwi_arr)
+    @qlwi_arr = qlwi_arr # Array of QListWidgetItems
+    self.has_tool_entry = false # Don't add a toolbar item
+    register(-1000, "quick_settings_panel", "Quick settings panel") # The -1000 will make the plugin register itself before other plugins
+  end
+
+  def configure(slug, value) # Will be called whenever a configuration parameter changes
+    
+    # Find which QListWidgetItem that was changed
+    qlwi = @qlwi_arr.find { |item| "#{item.slug}" == slug }
+    
+    # If it's not nil then it was found (i.e. it's a parameter that we care about), so change its value in the object itself.
+    qlwi.value = value if !qlwi.nil?
+    
+    # Make the system propagate the event further
+    return false 
+  end
+
+end
+
+class QVPItem &lt; QListWidgetItem
+  
+  attr_reader :name,:slug,:has_checkbox,:app,:value # These are readonly. Except for value, which has a writer method defined separately below
+  
+  def initialize(name,slug,has_checkbox,value,app) # Except for app, all are strings, e.g. "true" -- because that is how they are stored in the config file
+    @name = name
+    @slug = slug
+    @has_checkbox = has_checkbox
+    @value = value
+    @app = app
+    
+    super(name)
+    
+    # By setting .checkState to true or false initially, it knows there should be a checkbox and therefore shows one.
+    if @has_checkbox == "true"
+      if @value == "true" || @value == "diagonal"
+        self.checkState = Qt::CheckState::Checked
+      elsif @value == "false" || @value != "diagonal"
+        self.checkState = Qt::CheckState::Unchecked
+      else
+        raise "Check state not recognized"
+      end
+    end
+    
+  end
+  
+  def value=(val)
+    @value = val
+    if @has_checkbox == "true"
+      if @value == "true" || @value == "diagonal"
+        self.checkState = Qt::CheckState::Checked
+      elsif @value == "false" || @value != "diagonal"
+        self.checkState = Qt::CheckState::Unchecked
+      else
+        raise "Check state not recognized"
+      end
+    else # Otherwise, it will evaluate to something we feed in to the display text
+      self.text = "Grid: #{val} um" # But right now our only option is the 'Grid' text, so we feed that.
+    end
+  end
+  
+  def toggle_value!
+    # Set this object's internal tracking parameter
+    case @value
+    when "true"
+      @value = "false"
+    when "false"
+      @value = "true"
+    when "diagonal" # I don't use manhattan. I just go back and forth between diagonal and any.
+      @value = "any"
+    when "any"
+      @value = "diagonal"
+    end
+    
+    # Actually set the setting
+    @app.set_config(@slug,@value)
+    
+    # Return the new value
+    @value
+    
+  end
+end
+
+# Set up the panel
+app = RBA::Application.instance
+mw = app.main_window
+dock = QDockWidget.new("Quick settings", mw)
+dock.setAllowedAreas(Qt::DockWidgetArea::AllDockWidgetAreas) # Prior to 0.24 you had to use: dock.setAllowedAreas(0xF)
+lw = QListWidget.new(dock)
+dock.setWidget(lw)
+
+# Set up the panel's items
+items = []
+
+slug = "grid-micron"
+value = app.get_config(slug)
+name = "Grid: #{value} um"
+has_checkbox = "false"
+items &lt;&lt; QVPItem.new(name,slug,has_checkbox,value,app)
+
+slug = "edit-top-level-selection"
+value = app.get_config(slug)
+name = "Select top level"
+has_checkbox = "true"
+items &lt;&lt; QVPItem.new(name,slug,has_checkbox,value,app)
+
+slug = "edit-snap-to-objects"
+value = app.get_config(slug)
+name = "Snap to objects"
+has_checkbox = "true"
+items &lt;&lt; QVPItem.new(name,slug,has_checkbox,value,app)
+
+slug = "ruler-grid-snap"
+value = app.get_config(slug)
+name = "Ruler-grid snap"
+has_checkbox = "true"
+items &lt;&lt; QVPItem.new(name,slug,has_checkbox,value,app)
+
+slug = "no-stipple"
+value = app.get_config(slug)
+name = "Layers without fill"
+has_checkbox = "true"
+items &lt;&lt; QVPItem.new(name,slug,has_checkbox,value,app)
+
+slug = "edit-connect-angle-mode"
+value = app.get_config(slug)
+name = "Diag conn"
+has_checkbox = "true"
+items &lt;&lt; QVPItem.new(name,slug,has_checkbox,value,app)
+
+slug = "edit-move-angle-mode"
+value = app.get_config(slug)
+name = "Diag mvmts"
+has_checkbox = "true"
+items &lt;&lt; QVPItem.new(name,slug,has_checkbox,value,app)
+
+slug = "guiding-shape-visible"
+value = app.get_config(slug)
+name = "Show guid shapes"
+has_checkbox = "true"
+items &lt;&lt; QVPItem.new(name,slug,has_checkbox,value,app)
+
+items.each { |item| lw.addItem(item) }
+
+# Whenever any toggle-able items are clicked with the mouse, toggle 
+# the actual setting state. Does nothing for non-toggle-able items.
+lw.itemClicked() { |lwi| lwi.toggle_value! }
+
+# Show the panel
+mw.addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, dock)
+
+# Instantiate the plugin
+QVPPluginFactory.new(items)
+
+#############################
+# Add menu action to View menu, to restore it if it is closed
+#action = Action.new
+#action.title = "Quick settings"
+#action.checkable = true
+# Set initial check state to true for now (probably I should check its state and update it accordingly
+#action.checked = true
+#action.on_triggered { 
+#  # If the Quick settings panel isn't showing then show it
+#  p 'hi'
+#  mw.addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, dock)
+#}
+#mw.menu.insert_item("view_menu.show_hierarchy_panel","show_quick_settings",action)</text>
+</klayout-macro>

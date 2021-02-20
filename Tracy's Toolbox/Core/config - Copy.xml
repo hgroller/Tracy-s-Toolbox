@@ -1,0 +1,15 @@
+<config>
+  <trt-version> 0.3.3 </trt-version>
+  <quick-drc-script>inp = input(1)\noutp = inp.output(2)</quick-drc-script>
+  <quick-drc-radio>Overwrite</quick-drc-radio>
+  <pcell-arr-filename>C:/Users/David/KLayout/macros/Dropbox/The Red Toolbox/Cells/example.xlsx</pcell-arr-filename>
+  <pcell-arr-nrows>4</pcell-arr-nrows>
+  <pcell-arr-ncols>2</pcell-arr-ncols>
+  <pcell-arr-rowx>0</pcell-arr-rowx>
+  <pcell-arr-rowy>100</pcell-arr-rowy>
+  <pcell-arr-colx>100</pcell-arr-colx>
+  <pcell-arr-coly>0</pcell-arr-coly>
+  <pcell-arr-rowwise>true</pcell-arr-rowwise>
+  <pcell-arr-colwise>false</pcell-arr-colwise>
+  <assemble-layout-filepath>C:\Users\David\KLayout</assemble-layout-filepath>
+</config>

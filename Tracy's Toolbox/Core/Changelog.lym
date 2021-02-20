@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<klayout-macro>
+ <description>Changelog</description>
+ <version/>
+ <category/>
+ <prolog/>
+ <epilog/>
+ <doc/>
+ <autorun>false</autorun>
+ <autorun-early>false</autorun-early>
+ <shortcut/>
+ <show-in-menu>true</show-in-menu>
+ <group-name/>
+ <menu-path>trt_menu.core_submenu.end</menu-path>
+ <interpreter>ruby</interpreter>
+ <dsl-interpreter-name/>
+ <text>trt_version = Application.instance.get_trt_config("trt-version")
+
+html = "&lt;h1&gt;v #{trt_version}&lt;/h1&gt;"
+
+html &lt;&lt; "
+        &lt;p&gt;Added:
+          &lt;ul&gt;
+            &lt;li&gt;Layout &amp;gt; Added QuickTrace and Chop Functions&lt;/li&gt;
+          &lt;/ul&gt;
+        &lt;/p&gt;
+        
+        "
+
+RBA::BrowserDialog.new(html).exec
+</text>
+</klayout-macro>
